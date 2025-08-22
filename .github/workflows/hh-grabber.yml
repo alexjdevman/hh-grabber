@@ -1,0 +1,61 @@
+name: HH Grabber
+
+on:
+  schedule:
+    # Запуск каждый день в 12:00 UTC
+    - cron: '0 12 * * *'
+
+  # Возможность запуска вручную для тестирования
+  workflow_dispatch:
+
+env:
+  JAVA_VERSION: '21'
+
+jobs:
+  hh-grabber:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Клонируем репозиторий
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Устанавливаем Java 21
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+
+      # Кэшируем зависимости Maven
+      - name: Cache Maven dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+      # Компилируем проект
+      - name: Compile project
+        run: mvn clean compile
+
+      # Запускаем тесты (если есть)
+      - name: Run tests
+        run: mvn test
+        continue-on-error: true
+
+      # Собираем JAR файл
+      - name: Build JAR
+        run: mvn clean package
+
+      # Запускаем главный класс
+      - name: Run HH Grabber
+        run: mvn exec:java -Dexec.mainClass="dev.gan.grabber.Main"
+
+      # Опционально: отправка уведомлений при ошибке
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "Job failed at $(date)"
+          echo "::error::HH grabber job failed"

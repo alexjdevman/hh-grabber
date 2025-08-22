@@ -1,0 +1,16 @@
+target/
+*/target
+.idea/
+.mvn/
+.settings
+.project
+.classpath
+
+*.iml
+.DS_Store
+
+node_modules/
+
+drivers/
+
+dependency-reduced-pom.xml
